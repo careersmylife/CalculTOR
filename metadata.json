@@ -1,0 +1,5 @@
+{
+  "name": "Field Engineer's Calculator",
+  "description": "A comprehensive Scientific and Civil Engineering Calculator tailored for field engineers, students, and site supervisors. It includes modules for scientific calculations and various civil engineering tools like beam load analysis, concrete mix design, rebar estimation, and more, all within a mobile-friendly, dark-mode interface.",
+  "requestFramePermissions": []
+}
