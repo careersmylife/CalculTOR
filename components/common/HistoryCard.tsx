@@ -15,7 +15,7 @@ interface HistoryCardProps {
   canRedo: boolean;
 }
 
-const HistoryCard: React.FC<HistoryCardProps> = ({ history, onDelete, onClear, onCopy, onUndo, onRedo, canUndo, canRedo }) => {
+const HistoryCard = ({ history, onDelete, onClear, onCopy, onUndo, onRedo, canUndo, canRedo }: HistoryCardProps) => {
   if (history.length === 0) {
     return null;
   }

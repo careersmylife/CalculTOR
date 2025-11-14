@@ -1,12 +1,13 @@
-
 import React from 'react';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   children: React.ReactNode;
+  // FIX: Add optional 'id' to fix type error on destructuring.
+  id?: string;
 }
 
-const Select: React.FC<SelectProps> = ({ label, children, id, ...props }) => {
+const Select = ({ label, children, id, ...props }: SelectProps) => {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text-secondary dark:text-[#BDBDBD] mb-1">

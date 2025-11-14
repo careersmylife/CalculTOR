@@ -14,7 +14,7 @@ interface AIAssistantProps {
     activeModule: CalculatorModuleKey;
 }
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ activeModule }) => {
+const AIAssistant = ({ activeModule }: AIAssistantProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');

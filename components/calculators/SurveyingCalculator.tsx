@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import Card from '../common/Card';
 import Input from '../common/Input';
@@ -43,7 +42,7 @@ const initialInputs: Inputs = {
   azimuth: 45,
 };
 
-const SurveyingCalculator: React.FC<SurveyingCalculatorProps> = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }) => {
+const SurveyingCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: SurveyingCalculatorProps) => {
   const [inputHistory, setInputHistory] = useState([initialInputs]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const inputs = inputHistory[currentIndex];

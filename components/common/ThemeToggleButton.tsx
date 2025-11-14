@@ -5,7 +5,7 @@ interface ThemeToggleButtonProps {
   onToggle: () => void;
 }
 
-const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({ theme, onToggle }) => {
+const ThemeToggleButton = ({ theme, onToggle }: ThemeToggleButtonProps) => {
   return (
     <button
       onClick={onToggle}

@@ -19,7 +19,7 @@ interface ScientificCalculatorProps {
   canRedoHistory: boolean;
 }
 
-const ScientificCalculator: React.FC<ScientificCalculatorProps> = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }) => {
+const ScientificCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: ScientificCalculatorProps) => {
   const [historyStack, setHistoryStack] = useState(['']);
   const [currentIndex, setCurrentIndex] = useState(0);
   const display = historyStack[currentIndex];

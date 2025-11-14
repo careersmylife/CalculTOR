@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import Card from '../common/Card';
 import Input from '../common/Input';
@@ -41,7 +40,7 @@ const initialInputs: Inputs = {
   avgFillDepth: 0.2,
 };
 
-const EarthworkCalculator: React.FC<EarthworkCalculatorProps> = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }) => {
+const EarthworkCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: EarthworkCalculatorProps) => {
   const [inputHistory, setInputHistory] = useState([initialInputs]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const inputs = inputHistory[currentIndex];

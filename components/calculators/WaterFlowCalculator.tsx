@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import Card from '../common/Card';
 import Input from '../common/Input';
@@ -37,7 +36,7 @@ const initialInputs: Inputs = {
   maxVelocity: 1.5,
 };
 
-const WaterFlowCalculator: React.FC<WaterFlowCalculatorProps> = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }) => {
+const WaterFlowCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: WaterFlowCalculatorProps) => {
   const [inputHistory, setInputHistory] = useState([initialInputs]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const inputs = inputHistory[currentIndex];

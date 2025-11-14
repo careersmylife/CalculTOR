@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../common/Card';
 import Input from '../common/Input';
@@ -84,7 +79,7 @@ const initialInputs: Inputs = {
   distanceToFiber_mm: 150,
 };
 
-const BeamLoadCalculator: React.FC<BeamLoadCalculatorProps> = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, theme, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }) => {
+const BeamLoadCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, theme, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: BeamLoadCalculatorProps) => {
   const [inputHistory, setInputHistory] = useState([initialInputs]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const inputs = inputHistory[currentIndex];

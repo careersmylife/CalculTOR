@@ -1,14 +1,14 @@
-
 import React from 'react';
 
 interface CardProps {
   title: string;
   icon: string;
-  children: React.ReactNode;
+  // FIX: Make children optional to resolve type errors.
+  children?: React.ReactNode;
   className?: string;
 }
 
-const Card: React.FC<CardProps> = ({ title, icon, children, className = '' }) => {
+const Card = ({ title, icon, children, className = '' }: CardProps) => {
   return (
     <div className={`bg-secondary rounded-xl shadow-lg p-6 dark:bg-[#1A1A1A] ${className}`}>
       <div className="flex items-center mb-4">

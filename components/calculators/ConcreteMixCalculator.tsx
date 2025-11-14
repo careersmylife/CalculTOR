@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import Card from '../common/Card';
 import Input from '../common/Input';
@@ -40,7 +39,7 @@ const initialInputs: Inputs = {
   volume: 1,
 };
 
-const ConcreteMixCalculator: React.FC<ConcreteMixCalculatorProps> = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }) => {
+const ConcreteMixCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: ConcreteMixCalculatorProps) => {
   const [inputHistory, setInputHistory] = useState([initialInputs]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const inputs = inputHistory[currentIndex];

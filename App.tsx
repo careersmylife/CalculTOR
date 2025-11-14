@@ -14,7 +14,7 @@ import AIAssistant from './components/AIAssistant';
 
 type Theme = 'light' | 'dark';
 
-const App: React.FC = () => {
+const App = () => {
   const [activeModule, setActiveModule] = useState<CalculatorModuleKey>('SCIENTIFIC');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => {

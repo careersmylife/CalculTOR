@@ -9,11 +9,11 @@ interface ExportPDFButtonProps {
   defaultOrientation?: 'p' | 'l';
 }
 
-const ExportPDFButton: React.FC<ExportPDFButtonProps> = ({
+const ExportPDFButton = ({
   elementId,
   defaultTitle,
   defaultOrientation = 'p',
-}) => {
+}: ExportPDFButtonProps) => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);

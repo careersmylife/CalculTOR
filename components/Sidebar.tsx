@@ -26,7 +26,7 @@ interface ModuleItemProps {
   onToggleFavorite: (moduleKey: CalculatorModuleKey) => void;
 }
 
-const ModuleItem: React.FC<ModuleItemProps> = ({ module, showStar, isFavorited, isActive, onModuleChange, onToggleFavorite }) => {
+const ModuleItem = ({ module, showStar, isFavorited, isActive, onModuleChange, onToggleFavorite }: ModuleItemProps) => {
   return (
     <div className="flex items-center group">
       <button
@@ -56,7 +56,7 @@ const ModuleItem: React.FC<ModuleItemProps> = ({ module, showStar, isFavorited, 
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, isOpen, setIsOpen, favorites, onToggleFavorite, theme, onToggleTheme }) => {
+const Sidebar = ({ activeModule, onModuleChange, isOpen, setIsOpen, favorites, onToggleFavorite, theme, onToggleTheme }: SidebarProps) => {
   const allModules = Object.values(CALCULATOR_MODULES);
   const favoriteModules = favorites.map(key => CALCULATOR_MODULES[key]).filter(Boolean);
 

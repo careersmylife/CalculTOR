@@ -1,12 +1,13 @@
-
 import React from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   unit?: string;
+  // FIX: Add optional 'id' to fix type error on destructuring.
+  id?: string;
 }
 
-const Input: React.FC<InputProps> = ({ label, unit, id, ...props }) => {
+const Input = ({ label, unit, id, ...props }: InputProps) => {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-text-secondary dark:text-[#BDBDBD] mb-1">
