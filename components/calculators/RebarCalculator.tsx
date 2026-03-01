@@ -22,6 +22,113 @@ interface RebarCalculatorProps {
   canRedoHistory: boolean;
 }
 
+const RebarDiagram = ({ areaLength, areaWidth, spacing, theme }: { areaLength: number, areaWidth: number, spacing: number, theme: 'light' | 'dark' }) => {
+  const spacingM = spacing / 1000;
+  const padding = 35;
+  const containerWidth = 350;
+  const containerHeight = 250;
+  
+  const availableWidth = containerWidth - 2 * padding;
+  const availableHeight = containerHeight - 2 * padding;
+  
+  const safeLength = Math.max(0.1, areaLength);
+  const safeWidth = Math.max(0.1, areaWidth);
+  const safeSpacing = Math.max(0.01, spacingM);
+
+  const ratio = safeLength / safeWidth;
+  
+  let drawWidth, drawHeight;
+  if (ratio > availableWidth / availableHeight) {
+    drawWidth = availableWidth;
+    drawHeight = availableWidth / ratio;
+  } else {
+    drawHeight = availableHeight;
+    drawWidth = availableHeight * ratio;
+  }
+  
+  const offsetX = (containerWidth - drawWidth) / 2;
+  const offsetY = (containerHeight - drawHeight) / 2;
+
+  const numBarsSpacedAlongLength = Math.ceil(safeLength / safeSpacing) + 1;
+  const numBarsSpacedAlongWidth = Math.ceil(safeWidth / safeSpacing) + 1;
+
+  const maxBarsToDraw = 30;
+  const stepX = numBarsSpacedAlongLength > maxBarsToDraw ? Math.ceil(numBarsSpacedAlongLength / maxBarsToDraw) : 1;
+  const stepY = numBarsSpacedAlongWidth > maxBarsToDraw ? Math.ceil(numBarsSpacedAlongWidth / maxBarsToDraw) : 1;
+
+  const barsAlongLength = [];
+  for (let i = 0; i < numBarsSpacedAlongLength; i += stepX) {
+    const x = offsetX + (i * (drawWidth / (numBarsSpacedAlongLength - 1 || 1)));
+    barsAlongLength.push(<line key={`v-${i}`} x1={x} y1={offsetY} x2={x} y2={offsetY + drawHeight} stroke="#2D9CDB" strokeWidth="1.5" />);
+  }
+
+  const barsAlongWidth = [];
+  for (let i = 0; i < numBarsSpacedAlongWidth; i += stepY) {
+    const y = offsetY + (i * (drawHeight / (numBarsSpacedAlongWidth - 1 || 1)));
+    barsAlongWidth.push(<line key={`h-${i}`} x1={offsetX} y1={y} x2={offsetX + drawWidth} y2={y} stroke="#2D9CDB" strokeWidth="1.5" opacity="0.6" />);
+  }
+
+  return (
+    <div className="flex flex-col items-center w-full overflow-hidden">
+      <div className="relative bg-white dark:bg-[#1A1A1A] p-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-inner w-full flex justify-center">
+        <svg width={containerWidth} height={containerHeight} viewBox={`0 0 ${containerWidth} ${containerHeight}`} className="max-w-full h-auto">
+          <rect 
+            x={offsetX} 
+            y={offsetY} 
+            width={drawWidth} 
+            height={drawHeight} 
+            fill={theme === 'dark' ? '#262626' : '#F9F9F9'} 
+            stroke={theme === 'dark' ? '#555555' : '#CCCCCC'} 
+            strokeWidth="2" 
+            rx="2"
+          />
+          
+          {barsAlongLength}
+          {barsAlongWidth}
+          
+          <text x={containerWidth / 2} y={offsetY - 12} textAnchor="middle" fontSize="12" fontWeight="600" fill={theme === 'dark' ? '#F2F2F2' : '#1A1A1A'}>{areaLength}m</text>
+          <text 
+            x={offsetX - 12} 
+            y={containerHeight / 2} 
+            textAnchor="middle" 
+            fontSize="12" 
+            fontWeight="600" 
+            fill={theme === 'dark' ? '#F2F2F2' : '#1A1A1A'} 
+            transform={`rotate(-90, ${offsetX - 12}, ${containerHeight / 2})`}
+          >
+            {areaWidth}m
+          </text>
+
+          {numBarsSpacedAlongLength > 1 && (
+            <g>
+               <line 
+                x1={offsetX} 
+                y1={offsetY + drawHeight + 15} 
+                x2={offsetX + (drawWidth / (numBarsSpacedAlongLength - 1))} 
+                y2={offsetY + drawHeight + 15} 
+                stroke={theme === 'dark' ? '#BDBDBD' : '#555555'} 
+                strokeWidth="1" 
+                markerStart="url(#arrow)" 
+                markerEnd="url(#arrow)" 
+               />
+               <text x={offsetX + (drawWidth / (numBarsSpacedAlongLength - 1)) / 2} y={offsetY + drawHeight + 30} textAnchor="middle" fontSize="10" fill={theme === 'dark' ? '#BDBDBD' : '#555555'}>{spacing}mm c/c</text>
+            </g>
+          )}
+
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill={theme === 'dark' ? '#BDBDBD' : '#555555'} />
+            </marker>
+          </defs>
+        </svg>
+      </div>
+      <div className="mt-3 text-[10px] text-text-secondary dark:text-[#BDBDBD] italic text-center">
+        * Schematic representation of reinforcement grid. {numBarsSpacedAlongLength > maxBarsToDraw || numBarsSpacedAlongWidth > maxBarsToDraw ? '(Simplified view)' : ''}
+      </div>
+    </div>
+  );
+};
+
 interface Result {
     numBars: number;
     totalLength: number;
@@ -42,7 +149,7 @@ const initialInputs: Inputs = {
   areaWidth: 5,
 };
 
-const RebarCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: RebarCalculatorProps) => {
+const RebarCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, theme, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: RebarCalculatorProps) => {
   const [inputHistory, setInputHistory] = useState([initialInputs]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const inputs = inputHistory[currentIndex];
@@ -121,7 +228,7 @@ const RebarCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, 
     <>
       <div id="rebar-report">
         <h2 className="text-2xl font-bold mb-4 text-text-primary dark:text-[#F2F2F2]">{title}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card title="Inputs" icon="fas fa-edit">
             <div className="flex justify-end space-x-2 mb-2">
                 <Button onClick={undo} disabled={!canUndo} variant="secondary" className="px-3 py-1 text-xs"><i className="fas fa-undo mr-1"></i> Undo</Button>
@@ -159,6 +266,19 @@ const RebarCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, 
               </div>
             ) : (
               <p className="text-text-secondary dark:text-[#BDBDBD]">Enter valid dimensions to see results.</p>
+            )}
+          </Card>
+
+          <Card title="Placement Diagram" icon="fas fa-project-diagram">
+            {result ? (
+              <RebarDiagram 
+                areaLength={inputs.areaLength} 
+                areaWidth={inputs.areaWidth} 
+                spacing={inputs.spacing} 
+                theme={theme} 
+              />
+            ) : (
+              <p className="text-text-secondary dark:text-[#BDBDBD]">Enter valid dimensions to see diagram.</p>
             )}
           </Card>
         </div>

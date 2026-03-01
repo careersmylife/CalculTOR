@@ -26,7 +26,7 @@ interface ModuleItemProps {
   onToggleFavorite: (moduleKey: CalculatorModuleKey) => void;
 }
 
-const ModuleItem = ({ module, showStar, isFavorited, isActive, onModuleChange, onToggleFavorite }: ModuleItemProps) => {
+const ModuleItem: React.FC<ModuleItemProps> = ({ module, showStar, isFavorited, isActive, onModuleChange, onToggleFavorite }) => {
   return (
     <div className="flex items-center group">
       <button

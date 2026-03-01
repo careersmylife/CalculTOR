@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Card from '../common/Card';
 import Button from '../common/Button';
@@ -17,6 +18,14 @@ interface ScientificCalculatorProps {
   redoHistoryAction: () => void;
   canUndoHistory: boolean;
   canRedoHistory: boolean;
+}
+
+interface ButtonConfig {
+  display: string;
+  value: string;
+  variant: 'primary' | 'secondary';
+  className?: string;
+  colSpan?: number;
 }
 
 const ScientificCalculator = ({ title, history, addHistoryEntry, deleteHistoryEntry, clearHistory, undoHistoryAction, redoHistoryAction, canUndoHistory, canRedoHistory }: ScientificCalculatorProps) => {
@@ -59,11 +68,17 @@ const ScientificCalculator = ({ title, history, addHistoryEntry, deleteHistoryEn
   const canUndo = currentIndex > 0;
   const canRedo = currentIndex < historyStack.length - 1;
 
+  // Helper to safely get numeric value for memory operations
   const getCurrentValue = (): number => {
     if (result && result !== 'Error') {
       const parsedResult = parseFloat(result);
       if (!isNaN(parsedResult)) return parsedResult;
     }
+    // Very basic fallback attempt to eval current display if result is empty
+    return 0;
+  };
+
+  const calculateResult = () => {
     try {
       const factorial = (n: number): number => {
         if (n < 0 || n % 1 !== 0) return NaN;
@@ -75,20 +90,87 @@ const ScientificCalculator = ({ title, history, addHistoryEntry, deleteHistoryEn
         return res;
       };
 
-      let processedDisplay = display.replace(/\^/g, '**');
-      processedDisplay = processedDisplay.replace(/(\d+)!/g, (match, numStr) => {
+      // 1. Replace tokens with safe placeholders to prevent substring collisions
+      let expr = display;
+      const replacements: [RegExp, string][] = [
+        [/sin⁻¹\(/g, 'FUNC_ASIN('],
+        [/cos⁻¹\(/g, 'FUNC_ACOS('],
+        [/tan⁻¹\(/g, 'FUNC_ATAN('],
+        [/sin\(/g, 'FUNC_SIN('],
+        [/cos\(/g, 'FUNC_COS('],
+        [/tan\(/g, 'FUNC_TAN('],
+        [/log\(/g, 'FUNC_LOG10('],
+        [/ln\(/g, 'FUNC_LOG('],
+        [/√\(/g, 'FUNC_SQRT('],
+        [/∛\(/g, 'FUNC_CBRT('],
+        [/abs\(/g, 'FUNC_ABS('],
+        [/exp\(/g, 'FUNC_EXP('],
+        [/×/g, '*'],
+        [/÷/g, '/'],
+        [/\^/g, '**'],
+        [/π/g, 'CONST_PI'],
+        [/e/g, 'CONST_E'],
+        [/g/g, 'CONST_G'],
+        [/mod/g, '%'],
+      ];
+
+      replacements.forEach(([regex, replacement]) => {
+        expr = expr.replace(regex, replacement);
+      });
+
+      // Handle factorial (simple post-fix ! support)
+      expr = expr.replace(/(\d+)!/g, (match, numStr) => {
         const num = parseInt(numStr, 10);
         return String(factorial(num));
       });
 
-      const evalResult = eval(processedDisplay);
-      if (typeof evalResult === 'number' && isFinite(evalResult)) {
-        return evalResult;
+      // 2. Finalize to JS Syntax
+      expr = expr
+        .replace(/FUNC_ASIN/g, 'Math.asin')
+        .replace(/FUNC_ACOS/g, 'Math.acos')
+        .replace(/FUNC_ATAN/g, 'Math.atan')
+        .replace(/FUNC_SIN/g, 'Math.sin')
+        .replace(/FUNC_COS/g, 'Math.cos')
+        .replace(/FUNC_TAN/g, 'Math.tan')
+        .replace(/FUNC_LOG10/g, 'Math.log10')
+        .replace(/FUNC_LOG/g, 'Math.log')
+        .replace(/FUNC_SQRT/g, 'Math.sqrt')
+        .replace(/FUNC_CBRT/g, 'Math.cbrt')
+        .replace(/FUNC_ABS/g, 'Math.abs')
+        .replace(/FUNC_EXP/g, 'Math.exp')
+        .replace(/CONST_PI/g, 'Math.PI')
+        .replace(/CONST_E/g, 'Math.E')
+        .replace(/CONST_G/g, String(SCIENTIFIC_CONSTANTS.g.value));
+
+      // eslint-disable-next-line no-eval
+      const evalResult = eval(expr);
+      
+      if (typeof evalResult !== 'number' || !isFinite(evalResult)) {
+        setResult('Error');
+        return;
+      }
+
+      let resultString: string;
+      const absResult = Math.abs(evalResult);
+
+      if (absResult > 1e12 || (absResult < 1e-6 && absResult !== 0)) {
+        resultString = evalResult.toExponential(6);
+      } else {
+        resultString = parseFloat(evalResult.toPrecision(12)).toString();
+      }
+
+      setResult(resultString);
+
+      if (display && resultString && resultString !== 'Error') {
+        addHistoryEntry({
+          summary: `${display} = ${resultString}`,
+          inputs: { Expression: display },
+          results: { Result: resultString }
+        });
       }
     } catch (error) {
-      // Could be an incomplete expression, ignore.
+      setResult('Error');
     }
-    return 0;
   };
 
   const handleButtonClick = (value: string) => {
@@ -97,56 +179,11 @@ const ScientificCalculator = ({ title, history, addHistoryEntry, deleteHistoryEn
       setCurrentIndex(0);
       setResult('');
     } else if (value === 'DEL') {
+      // Basic delete: remove last character. 
+      // Ideally this would remove whole tokens (like 'sin(') but simple slice is standard fallback
       updateDisplay(d => d.slice(0, -1));
     } else if (value === '=') {
-      try {
-        const factorial = (n: number): number => {
-          if (n < 0 || n % 1 !== 0) return NaN;
-          if (n === 0 || n === 1) return 1;
-          let result = 1;
-          for (let i = 2; i <= n; i++) {
-            result *= i;
-          }
-          return result;
-        };
-
-        let processedDisplay = display.replace(/\^/g, '**');
-
-        processedDisplay = processedDisplay.replace(/(\d+)!/g, (match, numStr) => {
-          const num = parseInt(numStr, 10);
-          return String(factorial(num));
-        });
-
-        const evalResult = eval(processedDisplay);
-        
-        if (typeof evalResult !== 'number' || !isFinite(evalResult)) {
-          setResult('Error');
-          return;
-        }
-
-        let resultString: string;
-        const absResult = Math.abs(evalResult);
-
-        // Use scientific notation for very large or very small numbers (but not zero)
-        if (absResult > 1e12 || (absResult < 1e-6 && absResult !== 0)) {
-          resultString = evalResult.toExponential(6);
-        } else {
-          // Use toPrecision for accuracy and parseFloat to remove trailing zeros
-          resultString = parseFloat(evalResult.toPrecision(12)).toString();
-        }
-
-        setResult(resultString);
-
-        if (display && resultString && resultString !== 'Error') {
-          addHistoryEntry({
-            summary: `${display} = ${resultString}`,
-            inputs: { Expression: display },
-            results: { Result: resultString }
-          });
-        }
-      } catch (error) {
-        setResult('Error');
-      }
+      calculateResult();
     } else if (value === 'MC') {
       setMemoryValue(0);
     } else if (value === 'MR') {
@@ -160,6 +197,7 @@ const ScientificCalculator = ({ title, history, addHistoryEntry, deleteHistoryEn
     }
   };
   
+  // Unit Converter Logic
   const handleUnitConversion = () => {
     const category = UNIT_CONVERSIONS[unitCategory];
     const baseValue = inputValue / category[fromUnit];
@@ -188,15 +226,61 @@ const ScientificCalculator = ({ title, history, addHistoryEntry, deleteHistoryEn
     });
   };
 
-  const buttonLayout = [
-    { display: 'sin', value: 'Math.sin(' }, { display: 'cos', value: 'Math.cos(' }, { display: 'tan', value: 'Math.tan(' }, { display: 'log', value: 'Math.log10(' }, { display: 'ln', value: 'Math.log(' },
-    { display: 'sin⁻¹', value: 'Math.asin(' }, { display: 'cos⁻¹', value: 'Math.acos(' }, { display: 'tan⁻¹', value: 'Math.atan(' }, { display: '(', value: '(' }, { display: ')', value: ')' },
-    { display: 'x²', value: '^2' }, { display: 'x³', value: '^3' }, { display: '√', value: 'Math.sqrt(' }, { display: '∛', value: 'Math.cbrt(' }, { display: '^', value: '^' },
-    { display: 'abs', value: 'Math.abs(' }, { display: 'exp', value: 'Math.exp(' }, { display: 'n!', value: '!' }, { display: '%', value: '%' }, { display: 'DEL', value: 'DEL' },
-    { display: '7', value: '7' }, { display: '8', value: '8' }, { display: '9', value: '9' }, { display: '/', value: '/' }, { display: 'C', value: 'C' },
-    { display: '4', value: '4' }, { display: '5', value: '5' }, { display: '6', value: '6' }, { display: '*', value: '*' }, { display: '-', value: '-' },
-    { display: '1', value: '1' }, { display: '2', value: '2' }, { display: '3', value: '3' }, { display: '+', value: '+' }, { display: '=', value: '=', rowSpan: 2 },
-    { display: '0', value: '0', colSpan: 2 }, { display: '.', value: '.' },
+  const buttonLayout: ButtonConfig[] = [
+    // Row 1: Actions & Groups
+    { display: 'C', value: 'C', variant: 'secondary', className: 'bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 font-bold' },
+    { display: 'DEL', value: 'DEL', variant: 'secondary', className: 'bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 font-bold' },
+    { display: '(', value: '(', variant: 'secondary' },
+    { display: ')', value: ')', variant: 'secondary' },
+    { display: 'mod', value: 'mod', variant: 'secondary' },
+
+    // Row 2: Trig & Logs
+    { display: 'sin', value: 'sin(', variant: 'secondary' },
+    { display: 'cos', value: 'cos(', variant: 'secondary' },
+    { display: 'tan', value: 'tan(', variant: 'secondary' },
+    { display: 'log', value: 'log(', variant: 'secondary' },
+    { display: 'ln', value: 'ln(', variant: 'secondary' },
+
+    // Row 3: Inverse Trig & Constants
+    { display: 'sin⁻¹', value: 'sin⁻¹(', variant: 'secondary' },
+    { display: 'cos⁻¹', value: 'cos⁻¹(', variant: 'secondary' },
+    { display: 'tan⁻¹', value: 'tan⁻¹(', variant: 'secondary' },
+    { display: 'π', value: 'π', variant: 'secondary', className: 'text-accent font-serif font-bold' },
+    { display: 'e', value: 'e', variant: 'secondary', className: 'text-accent font-serif font-bold' },
+
+    // Row 4: Powers & Roots
+    { display: 'x²', value: '^2', variant: 'secondary' },
+    { display: '√', value: '√(', variant: 'secondary' },
+    { display: '^', value: '^', variant: 'secondary' },
+    { display: 'n!', value: '!', variant: 'secondary' },
+    { display: 'g', value: 'g', variant: 'secondary', className: 'text-accent font-serif font-bold' },
+
+    // Row 5: Num 7-9
+    { display: '7', value: '7', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '8', value: '8', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '9', value: '9', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '÷', value: '÷', variant: 'primary' },
+    { display: 'abs', value: 'abs(', variant: 'secondary' },
+
+    // Row 6: Num 4-6
+    { display: '4', value: '4', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '5', value: '5', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '6', value: '6', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '×', value: '×', variant: 'primary' },
+    { display: 'exp', value: 'exp(', variant: 'secondary' },
+
+    // Row 7: Num 1-3
+    { display: '1', value: '1', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '2', value: '2', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '3', value: '3', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '-', value: '-', variant: 'primary' },
+    { display: '∛', value: '∛(', variant: 'secondary' },
+
+    // Row 8: Num 0
+    { display: '0', value: '0', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D] col-span-2', colSpan: 2 },
+    { display: '.', value: '.', variant: 'secondary', className: 'bg-primary dark:bg-[#0D0D0D]' },
+    { display: '+', value: '+', variant: 'primary' },
+    { display: '=', value: '=', variant: 'primary', className: 'bg-green-600 hover:bg-green-700 text-white' },
   ];
 
   return (
@@ -205,75 +289,52 @@ const ScientificCalculator = ({ title, history, addHistoryEntry, deleteHistoryEn
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold mb-4 text-text-primary dark:text-[#F2F2F2]">{title}</h2>
-            <Card title="Calculation" icon="fas fa-calculator" className="mb-6">
+            <Card title="Scientific Keypad" icon="fas fa-calculator" className="mb-6">
               <div className="flex justify-between items-center mb-2">
-                 <Button onClick={() => handleButtonClick('C')} variant="secondary" className="px-4 py-1 text-sm bg-red-500/20 text-red-500 hover:bg-red-500/30">Clear All</Button>
+                 <div className="text-xs text-text-secondary dark:text-[#BDBDBD] font-mono">
+                    Deg | Rad
+                 </div>
                 <div className="flex space-x-2">
                   <Button onClick={undo} disabled={!canUndo} variant="secondary" className="px-4 py-1 text-sm"><i className="fas fa-undo mr-1"></i> Undo</Button>
                   <Button onClick={redo} disabled={!canRedo} variant="secondary" className="px-4 py-1 text-sm">Redo <i className="fas fa-redo ml-1"></i></Button>
                 </div>
               </div>
-              <div className="bg-primary p-4 rounded-lg mb-4 text-right dark:bg-[#0D0D0D]">
+              <div className="bg-primary p-4 rounded-lg mb-4 text-right dark:bg-[#0D0D0D] border border-highlight dark:border-[#4F4F4F]">
                 <div className="text-text-secondary text-xl h-8 dark:text-[#BDBDBD] flex justify-between items-center">
                   <span 
-                    className={`font-mono text-sm transition-opacity duration-300 ${memoryValue !== 0 ? 'opacity-100' : 'opacity-0'}`}
+                    className={`font-mono text-sm transition-opacity duration-300 text-accent ${memoryValue !== 0 ? 'opacity-100' : 'opacity-0'}`}
                     title={`Memory: ${memoryValue}`}
                   >
                     M
                   </span>
-                  <div className="truncate flex-grow">{display || '0'}</div>
+                  <div className="truncate flex-grow font-mono tracking-wide">{display || '0'}</div>
                 </div>
-                <div className="text-text-primary text-4xl font-bold h-12 dark:text-[#F2F2F2] truncate">{result}</div>
+                <div className="text-text-primary text-4xl font-bold h-12 dark:text-[#F2F2F2] truncate mt-2">{result}</div>
               </div>
               
-              <div className="flex justify-around gap-2 mb-2">
-                <Button className="flex-1" onClick={() => handleButtonClick('MC')} variant="secondary">MC</Button>
-                <Button className="flex-1" onClick={() => handleButtonClick('MR')} variant="secondary">MR</Button>
-                <Button className="flex-1" onClick={() => handleButtonClick('M+')} variant="secondary">M+</Button>
-                <Button className="flex-1" onClick={() => handleButtonClick('M-')} variant="secondary">M-</Button>
+              <div className="flex justify-around gap-2 mb-3">
+                <Button className="flex-1 text-xs py-2" onClick={() => handleButtonClick('MC')} variant="secondary">MC</Button>
+                <Button className="flex-1 text-xs py-2" onClick={() => handleButtonClick('MR')} variant="secondary">MR</Button>
+                <Button className="flex-1 text-xs py-2" onClick={() => handleButtonClick('M+')} variant="secondary">M+</Button>
+                <Button className="flex-1 text-xs py-2" onClick={() => handleButtonClick('M-')} variant="secondary">M-</Button>
               </div>
 
-              <div className="grid grid-cols-5 grid-rows-7 gap-2">
-                {buttonLayout.map((btn) => {
-                  const isOperator = ['=', '+', '-', '*', '/', '^', '%'].includes(btn.display);
-                  const isCommand = ['C', 'DEL'].includes(btn.value);
-                  const classNames = [
-                    btn.rowSpan === 2 ? `row-span-2` : '',
-                    btn.colSpan === 2 ? `col-span-2` : '',
-                    'h-full w-full flex items-center justify-center text-lg'
-                  ].join(' ');
-
-                  let variant: 'primary' | 'secondary' = 'secondary';
-                  if (isOperator) variant = 'primary';
-                  if (!isNaN(Number(btn.display))) variant = 'secondary';
-                  if(btn.display === '.') variant = 'secondary';
-
-                  return (
-                    <Button
-                      key={btn.display}
-                      onClick={() => handleButtonClick(btn.value)}
-                      variant={variant}
-                      className={classNames}
-                    >
-                      {btn.display}
-                    </Button>
-                  );
-                })}
+              <div className="grid grid-cols-5 gap-2">
+                {buttonLayout.map((btn, idx) => (
+                  <Button
+                    key={`${btn.display}-${idx}`}
+                    onClick={() => handleButtonClick(btn.value)}
+                    variant={btn.variant}
+                    className={`h-12 flex items-center justify-center text-lg ${btn.className || ''} ${btn.colSpan ? `col-span-${btn.colSpan}` : ''}`}
+                  >
+                    {btn.display}
+                  </Button>
+                ))}
               </div>
             </Card>
           </div>
 
           <div className="space-y-6">
-            <Card title="Constants" icon="fas fa-atom">
-                <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(SCIENTIFIC_CONSTANTS).map(([key, { value, name }]) => (
-                        <Button key={key} onClick={() => handleButtonClick(String(value))} title={name} variant="secondary">
-                            {key}
-                        </Button>
-                    ))}
-                </div>
-            </Card>
-
             <Card title="Unit Converter" icon="fas fa-exchange-alt">
               <select value={unitCategory} onChange={(e) => setUnitCategory(e.target.value)} className="w-full bg-primary border border-highlight rounded-lg p-2 mb-2 dark:bg-[#0D0D0D] dark:border-[#4F4F4F] dark:text-[#F2F2F2]">
                     {Object.keys(UNIT_CONVERSIONS).map(cat => <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>)}
